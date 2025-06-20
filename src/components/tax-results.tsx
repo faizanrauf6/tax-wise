@@ -103,16 +103,20 @@ export function TaxResults({ results }: TaxResultsProps) {
             </Card>
           </div>
         </div>
-        
+
         <Separator />
 
-        <div>
+        <div className="space-y-4">
           <h3 className="text-lg font-semibold text-primary flex items-center mb-2">
             <ClipboardList className="mr-2 h-5 w-5 text-accent" />
-            Tax Slab Breakdown
+            Tax Slabs
           </h3>
-          <div className="prose prose-sm max-w-none p-4 bg-muted/50 rounded-md whitespace-pre-wrap text-muted-foreground">
-            {results.taxSlabBreakdown}
+
+          <div className="p-4 bg-muted/50 rounded-md text-sm space-y-2">
+            <p className="font-semibold text-primary">{results.taxSlabSummary}</p>
+            <pre className="whitespace-pre-wrap text-muted-foreground text-sm font-mono">
+              {results.taxSlabList}
+            </pre>
           </div>
         </div>
       </CardContent>

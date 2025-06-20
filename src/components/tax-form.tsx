@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { TaxCalculationOutput } from '@/types/tax'; // Adjust the import path as necessary
+import type { TaxCalculationOutput } from '@/types/tax';
 
 const formSchema = z.object({
   salary: z.coerce.number().positive({ message: "Salary must be a positive number." }),
@@ -50,19 +50,21 @@ const taxSlabs = [
 
 function calculateLocalTax(annualIncomeToTax: number): TaxCalculationOutput {
   let taxPayableAnnually = 0;
-  let taxSlabBreakdown = "";
 
-  const currentSlab = taxSlabs.find(slab => annualIncomeToTax >= slab.min && annualIncomeToTax <= slab.max);
+  const currentSlab = taxSlabs.find(
+    slab => annualIncomeToTax >= slab.min && annualIncomeToTax <= slab.max
+  );
 
   if (!currentSlab) {
-     return {
-        totalAnnualIncome: annualIncomeToTax,
-        taxPayableAnnually: 0,
-        taxPayableMonthly: 0,
-        taxSlabBreakdown: `Error: Could not determine tax slab for the given income of PKR ${annualIncomeToTax.toLocaleString('en-PK')}. Please ensure the income is a positive number.`,
-        takeHomeSalaryAnnually: annualIncomeToTax,
-        takeHomeSalaryMonthly: annualIncomeToTax / 12,
-     };
+    return {
+      totalAnnualIncome: annualIncomeToTax,
+      taxPayableAnnually: 0,
+      taxPayableMonthly: 0,
+      takeHomeSalaryAnnually: annualIncomeToTax,
+      takeHomeSalaryMonthly: annualIncomeToTax / 12,
+      taxSlabSummary: `❌ Error: Could not determine tax slab.`,
+      taxSlabList: "",
+    };
   }
 
   const incomeTaxableAtCurrentRate = annualIncomeToTax - (currentSlab.min === 0 ? 0 : currentSlab.min - 1);
@@ -70,37 +72,32 @@ function calculateLocalTax(annualIncomeToTax: number): TaxCalculationOutput {
   taxPayableAnnually = currentSlab.base + taxAtCurrentRate;
 
   const taxPayableMonthly = taxPayableAnnually / 12;
-  const takeHomeSalaryAnnuallyFromThisCalc = annualIncomeToTax - taxPayableAnnually;
-  const takeHomeSalaryMonthlyFromThisCalc = takeHomeSalaryAnnuallyFromThisCalc / 12;
+  const takeHomeSalaryAnnually = annualIncomeToTax - taxPayableAnnually;
+  const takeHomeSalaryMonthly = takeHomeSalaryAnnually / 12;
 
-  const formatNum = (num: number) => num.toLocaleString('en-PK', {minimumFractionDigits: 0, maximumFractionDigits: 2});
-  
-  if (currentSlab.min === 0 && currentSlab.rate === 0) { 
-    if (annualIncomeToTax === 0) {
-        taxSlabBreakdown = `Taxable Income: PKR ${formatNum(annualIncomeToTax)}\nNo tax is applicable.`;
-    } else {
-        taxSlabBreakdown = `Taxable Income: PKR ${formatNum(annualIncomeToTax)}\n` +
-                           `Applicable Tax Rate: ${(currentSlab.rate * 100).toFixed(0)}%\n` +
-                           `Tax Calculation: PKR ${formatNum(annualIncomeToTax)} × ${(currentSlab.rate * 100).toFixed(0)}% = PKR ${formatNum(taxPayableAnnually)}`;
-    }
-  } else {
-    taxSlabBreakdown = `Tax calculation based on taxable annual income of PKR ${formatNum(annualIncomeToTax)}:\n\n` +
-                       `1. Tax on income up to PKR ${formatNum(currentSlab.min === 0 ? 0 : currentSlab.min - 1)} (Fixed Amount from previous slabs): PKR ${formatNum(currentSlab.base)}\n\n` +
-                       `2. Income falling in the current slab:\n` +
-                       `   PKR ${formatNum(annualIncomeToTax)} - PKR ${formatNum(currentSlab.min === 0 ? 0 : currentSlab.min - 1)} = PKR ${formatNum(incomeTaxableAtCurrentRate)}\n\n` +
-                       `3. Tax on this portion (PKR ${formatNum(incomeTaxableAtCurrentRate)} @ ${(currentSlab.rate * 100).toFixed(0)}%):\n` +
-                       `   PKR ${formatNum(incomeTaxableAtCurrentRate)} × ${(currentSlab.rate * 100).toFixed(0)}% = PKR ${formatNum(taxAtCurrentRate)}\n\n` +
-                       `4. Total Annual Tax Payable (on PKR ${formatNum(annualIncomeToTax)}):\n` +
-                       `   PKR ${formatNum(currentSlab.base)} (Fixed Amount) + PKR ${formatNum(taxAtCurrentRate)} (Tax on current slab portion) = PKR ${formatNum(taxPayableAnnually)}`;
-  }
+  const formatNum = (num: number) => num.toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+  const taxSlabSummary = `Applicable Tax Slab: PKR ${formatNum(currentSlab.min)} – ${currentSlab.max === Infinity ? '∞' : `PKR ${formatNum(currentSlab.max)}`} (${(currentSlab.rate * 100).toFixed(0)}%${currentSlab.base > 0 ? ` + PKR ${formatNum(currentSlab.base)}` : ''})`;
+
+  const taxSlabList = `Current Tax Slabs (FY 2025–26):\n` + taxSlabs.map((slab, i) => {
+    const min = `PKR ${formatNum(slab.min)}`;
+    const max = slab.max === Infinity ? "∞" : `PKR ${formatNum(slab.max)}`;
+    const rate = `${(slab.rate * 100).toFixed(0)}%`;
+    const base = slab.base > 0 ? ` + PKR ${formatNum(slab.base)}` : "";
+    return `${i + 1}. ${min} – ${max}: ${rate}${base}`;
+  }).join("\n");
 
   return {
-    totalAnnualIncome: annualIncomeToTax, 
+    totalAnnualIncome: annualIncomeToTax,
     taxPayableAnnually,
     taxPayableMonthly,
-    taxSlabBreakdown,
-    takeHomeSalaryAnnually: takeHomeSalaryAnnuallyFromThisCalc,
-    takeHomeSalaryMonthly: takeHomeSalaryMonthlyFromThisCalc,
+    takeHomeSalaryAnnually,
+    takeHomeSalaryMonthly,
+    taxSlabSummary,
+    taxSlabList,
   };
 }
 
@@ -111,7 +108,7 @@ export function TaxForm({ onCalculationResult, onCalculationStart, onCalculation
   const form = useForm<TaxFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      salary: '' as unknown as number, 
+      salary: '' as unknown as number,
       bonus: '' as unknown as number,
       includeBonusInTaxableIncome: "yes",
     },
@@ -125,12 +122,13 @@ export function TaxForm({ onCalculationResult, onCalculationStart, onCalculation
       const monthlyBonus = values.bonus || 0;
       const includeBonusInTaxable = values.includeBonusInTaxableIncome === "yes";
 
-      const actualTotalAnnualIncome = (monthlySalary + monthlyBonus) * 12; 
+      const actualTotalAnnualIncome = (monthlySalary + monthlyBonus) * 12;
 
       let annualTaxableIncome: number;
       let calculatedTaxDetails: TaxCalculationOutput;
       let finalTakeHomeAnnually: number;
-      let finalTaxSlabBreakdown: string;
+      let finalTaxSlabSummary: string;
+      let finalTaxSlabList: string;
       let finalTaxPayableAnnually: number;
       let finalTaxPayableMonthly: number;
 
@@ -140,33 +138,32 @@ export function TaxForm({ onCalculationResult, onCalculationStart, onCalculation
         finalTaxPayableAnnually = calculatedTaxDetails.taxPayableAnnually;
         finalTaxPayableMonthly = calculatedTaxDetails.taxPayableMonthly;
         finalTakeHomeAnnually = calculatedTaxDetails.takeHomeSalaryAnnually;
-        finalTaxSlabBreakdown = calculatedTaxDetails.taxSlabBreakdown;
+        finalTaxSlabSummary = calculatedTaxDetails.taxSlabSummary;
+        finalTaxSlabList = calculatedTaxDetails.taxSlabList;
       } else {
-        annualTaxableIncome = monthlySalary * 12; 
+        annualTaxableIncome = monthlySalary * 12;
         const annualBonusAmount = monthlyBonus * 12;
-        
-        calculatedTaxDetails = calculateLocalTax(annualTaxableIncome); 
+
+        calculatedTaxDetails = calculateLocalTax(annualTaxableIncome);
         finalTaxPayableAnnually = calculatedTaxDetails.taxPayableAnnually;
         finalTaxPayableMonthly = calculatedTaxDetails.taxPayableMonthly;
-        
+
         finalTakeHomeAnnually = calculatedTaxDetails.takeHomeSalaryAnnually + annualBonusAmount;
-        finalTaxSlabBreakdown = calculatedTaxDetails.taxSlabBreakdown;
-        if (monthlyBonus > 0) {
-          finalTaxSlabBreakdown += `\n\nNote: Monthly bonus of PKR ${monthlyBonus.toLocaleString('en-PK')} (Annual: PKR ${annualBonusAmount.toLocaleString('en-PK')}) was not included in the above tax calculation and is added directly to the take-home salary.`;
-        }
+        finalTaxSlabSummary = calculatedTaxDetails.taxSlabSummary;
+        finalTaxSlabList = calculatedTaxDetails.taxSlabList;
       }
-      
+
       const finalTakeHomeMonthly = finalTakeHomeAnnually / 12;
 
       onCalculationResult({
-        totalAnnualIncome: actualTotalAnnualIncome, 
+        totalAnnualIncome: actualTotalAnnualIncome,
         taxPayableAnnually: finalTaxPayableAnnually,
         taxPayableMonthly: finalTaxPayableMonthly,
-        taxSlabBreakdown: finalTaxSlabBreakdown,
+        taxSlabSummary: finalTaxSlabSummary,
+        taxSlabList: finalTaxSlabList,
         takeHomeSalaryAnnually: finalTakeHomeAnnually,
         takeHomeSalaryMonthly: finalTakeHomeMonthly,
       });
-
     } catch (error) {
       console.error("Tax calculation error:", error);
       toast({

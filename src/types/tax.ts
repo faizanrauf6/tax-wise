@@ -3,7 +3,8 @@ export interface TaxCalculationOutput {
   totalAnnualIncome: number;
   taxPayableAnnually: number;
   taxPayableMonthly: number;
-  taxSlabBreakdown: string;
   takeHomeSalaryAnnually: number;
   takeHomeSalaryMonthly: number;
+  taxSlabSummary: string;       // NEW - applicable slab
+  taxSlabList: string;          // NEW - full list
 }
