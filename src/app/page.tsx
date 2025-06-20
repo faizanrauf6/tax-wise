@@ -27,7 +27,7 @@ export default function Home() {
     // 🔹 Scroll to TaxResults smoothly after delay (optional for better experience)
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100); // Delay slightly to allow rendering
+    }, 100);
   };
 
   return (
