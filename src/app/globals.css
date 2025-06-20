@@ -1,26 +1,85 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 40 50% 95%; /* Very light beige/off-white for light theme */
+    --foreground: 210 29% 15%; /* Dark blue/black for text in light theme */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 210 29% 15%;
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 210 29% 15%;
+    --primary: 210 29% 20%; /* Dark blue for primary actions in light theme */
+    --primary-foreground: 40 50% 95%; /* Light text on dark primary */
+    --secondary: 210 20% 90%; /* Light gray-blue */
+    --secondary-foreground: 210 29% 20%; /* Dark blue for text on secondary */
+    --muted: 210 20% 85%; /* Slightly darker Light Blueish Gray */
+    --muted-foreground: 210 15% 50%; /* Medium Desaturated Blue */
+    --accent: 36 89% 55%; /* #F2AA4C, slightly toned down for light bg */
+    --accent-foreground: 210 40% 8%; /* Dark text on accent */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 20% 88%; /* Light Blueish Gray border */
+    --input: 210 20% 92%; /* Very Light Blueish Gray input background */
+    --ring: 36 89% 60%; /* #F2AA4C for focus rings in light theme */
+    --chart-1: 210 29% 30%;
+    --chart-2: 36 89% 55%;
+    --chart-3: 210 29% 50%;
+    --chart-4: 36 89% 65%;
+    --chart-5: 210 29% 70%;
+    --radius: 0.5rem;
+    --sidebar-background: 210 30% 97%; /* Very Light Blueish Gray */
+    --sidebar-foreground: 210 29% 15%; /* Dark Desaturated Blue */
+    --sidebar-primary: 210 29% 20%; /* Moderate Blue */
+    --sidebar-primary-foreground: 40 50% 95%; /* Almost White */
+    --sidebar-accent: 36 89% 55%; /* Teal */
+    --sidebar-accent-foreground: 210 40% 8%; /* Almost White */
+    --sidebar-border: 210 20% 88%; /* Light Blueish Gray border */
+    --sidebar-ring: 36 89% 60%; /* Brighter Moderate Blue */
+  }
+
+  .dark {
+    --background: 210 29% 10%; /* #101820 */
+    --foreground: 36 89% 70%; /* #F2AA4C - for general text, slightly lightened */
+    --card: 210 29% 13%; /* Slightly lighter than main bg */
+    --card-foreground: 36 89% 70%; /* Text on cards */
+    --popover: 210 29% 13%;
+    --popover-foreground: 36 89% 70%;
+    --primary: 36 89% 60%; /* #F2AA4C - for button backgrounds, titles if styled as primary */
+    --primary-foreground: 210 29% 10%; /* #101820 - text on primary buttons */
+    --secondary: 210 29% 18%; /* A slightly lighter dark blue for secondary elements */
+    --secondary-foreground: 36 89% 65%; /* Accent color for text on secondary elements */
+    --muted: 210 29% 22%;
+    --muted-foreground: 36 89% 50%; /* A dimmer version of the accent for muted text */
+    --accent: 36 89% 60%; /* #F2AA4C */
+    --accent-foreground: 210 29% 10%; /* #101820 for text on accent */
+    --destructive: 0 70% 50%; /* Standard red */
+    --destructive-foreground: 0 0% 98%; /* White text on destructive */
+    --border: 210 29% 20%; /* Subtle border */
+    --input: 210 29% 15%; /* Input background */
+    --ring: 36 89% 65%; /* Focus ring, slightly brighter accent */
+    --chart-1: 36 89% 60%;
+    --chart-2: 36 89% 50%;
+    --chart-3: 36 89% 70%;
+    --chart-4: 45 80% 60%;
+    --chart-5: 30 80% 60%;
+    --sidebar-background: 210 29% 12%; 
+    --sidebar-foreground: 36 89% 70%; 
+    --sidebar-primary: 36 89% 60%; 
+    --sidebar-primary-foreground: 210 29% 10%; 
+    --sidebar-accent: 36 89% 55%; 
+    --sidebar-accent-foreground: 210 29% 10%;
+    --sidebar-border: 210 29% 18%;
+    --sidebar-ring: 36 89% 65%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
