@@ -57,8 +57,7 @@ export default function ClientPage() {
       newParams.delete("bonus");
     }
     newParams.set("includeBonusInTaxableIncome", values.includeBonusInTaxableIncome);
-
-    router.replace(`${pathname}?${newParams.toString()}`);
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
   };
 
   const handleCalculationStart = () => {
