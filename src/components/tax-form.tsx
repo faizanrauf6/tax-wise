@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -13,28 +13,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import type { TaxCalculationOutput } from '@/types/tax';
+} from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { TaxCalculationOutput } from "@/types/tax";
 
 const formSchema = z.object({
   salary: z.coerce.number().positive({ message: "Salary must be a positive number." }),
   bonus: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : Number(val)),
+    (val) => (String(val).trim() === "" ? undefined : Number(val)),
     z.number().positive({ message: "Bonus must be a positive number." }).optional()
   ),
   includeBonusInTaxableIncome: z.enum(["yes", "no"]).default("yes"),
 });
 
-type TaxFormValues = z.infer<typeof formSchema>;
+export type TaxFormValues = z.infer<typeof formSchema>;
 
 interface TaxFormProps {
-  onCalculationResult: (result: TaxCalculationOutput) => void;
+  onCalculationResult: (result: TaxCalculationOutput, values: TaxFormValues) => void;
   onCalculationStart: () => void;
   onCalculationEnd: () => void;
+  defaultValues?: Partial<TaxFormValues>;
 }
 
 const taxSlabs = [
@@ -50,7 +51,7 @@ function calculateLocalTax(annualIncomeToTax: number): TaxCalculationOutput {
   let taxPayableAnnually = 0;
 
   const currentSlab = taxSlabs.find(
-    slab => annualIncomeToTax >= slab.min && annualIncomeToTax <= slab.max
+    (slab) => annualIncomeToTax >= slab.min && annualIncomeToTax <= slab.max
   );
 
   if (!currentSlab) {
@@ -65,7 +66,8 @@ function calculateLocalTax(annualIncomeToTax: number): TaxCalculationOutput {
     };
   }
 
-  const incomeTaxableAtCurrentRate = annualIncomeToTax - (currentSlab.min === 0 ? 0 : currentSlab.min - 1);
+  const incomeTaxableAtCurrentRate =
+    annualIncomeToTax - (currentSlab.min === 0 ? 0 : currentSlab.min - 1);
   const taxAtCurrentRate = incomeTaxableAtCurrentRate * currentSlab.rate;
   taxPayableAnnually = currentSlab.base + taxAtCurrentRate;
 
@@ -73,20 +75,31 @@ function calculateLocalTax(annualIncomeToTax: number): TaxCalculationOutput {
   const takeHomeSalaryAnnually = annualIncomeToTax - taxPayableAnnually;
   const takeHomeSalaryMonthly = takeHomeSalaryAnnually / 12;
 
-  const formatNum = (num: number) => num.toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+  const formatNum = (num: number) =>
+    num.toLocaleString("en-PK", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
 
-  const taxSlabSummary = `Applicable Tax Slab: PKR ${formatNum(currentSlab.min)} – ${currentSlab.max === Infinity ? '∞' : `PKR ${formatNum(currentSlab.max)}`} (${(currentSlab.rate * 100).toFixed(0)}%${currentSlab.base > 0 ? ` + PKR ${formatNum(currentSlab.base)}` : ''})`;
+  const taxSlabSummary = `Applicable Tax Slab: PKR ${formatNum(
+    currentSlab.min
+  )} – ${
+    currentSlab.max === Infinity ? "∞" : `PKR ${formatNum(currentSlab.max)}`
+  } (${(currentSlab.rate * 100).toFixed(0)}%${
+    currentSlab.base > 0 ? ` + PKR ${formatNum(currentSlab.base)}` : ""
+  })`;
 
-  const taxSlabList = `Current Tax Slabs (FY 2025–26):\n` + taxSlabs.map((slab, i) => {
-    const min = `PKR ${formatNum(slab.min)}`;
-    const max = slab.max === Infinity ? "∞" : `PKR ${formatNum(slab.max)}`;
-    const rate = `${(slab.rate * 100).toFixed(0)}%`;
-    const base = slab.base > 0 ? ` + PKR ${formatNum(slab.base)}` : "";
-    return `${i + 1}. ${min} – ${max}: ${rate}${base}`;
-  }).join("\n");
+  const taxSlabList =
+    `Current Tax Slabs (FY 2025–26):\n` +
+    taxSlabs
+      .map((slab, i) => {
+        const min = `PKR ${formatNum(slab.min)}`;
+        const max = slab.max === Infinity ? "∞" : `PKR ${formatNum(slab.max)}`;
+        const rate = `${(slab.rate * 100).toFixed(0)}%`;
+        const base = slab.base > 0 ? ` + PKR ${formatNum(slab.base)}` : "";
+        return `${i + 1}. ${min} – ${max}: ${rate}${base}`;
+      })
+      .join("\n");
 
   return {
     totalAnnualIncome: annualIncomeToTax,
@@ -99,95 +112,92 @@ function calculateLocalTax(annualIncomeToTax: number): TaxCalculationOutput {
   };
 }
 
-export function TaxForm({ onCalculationResult, onCalculationStart, onCalculationEnd }: TaxFormProps) {
+export function TaxForm({
+  onCalculationResult,
+  onCalculationStart,
+  onCalculationEnd,
+  defaultValues = {},
+}: TaxFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [salaryValue, setSalaryValue] = useState<string>('');
+  const [salaryValue, setSalaryValue] = useState(defaultValues.salary?.toString() ?? "");
   const { toast } = useToast();
 
   const form = useForm<TaxFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      salary: '' as unknown as number,
-      bonus: '' as unknown as number,
-      includeBonusInTaxableIncome: "yes",
+      salary: defaultValues.salary ?? ("" as unknown as number),
+      bonus: defaultValues.bonus ?? ("" as unknown as number),
+      includeBonusInTaxableIncome: defaultValues.includeBonusInTaxableIncome ?? "yes",
     },
   });
 
   const salaryNumber = Number(salaryValue);
   const showPercentages = salaryValue.length > 0 && !isNaN(salaryNumber) && salaryNumber > 0;
 
-  const ninePointOnePercent = showPercentages ? salaryNumber * 0.091 : 0;
-  const fivePercent = showPercentages ? salaryNumber * 0.05 : 0;
+  const ninePointOnePercent = showPercentages ? Math.round(salaryNumber * 0.091) : 0;
+  const fivePercent = showPercentages ? Math.round(salaryNumber * 0.05) : 0;
 
   async function onSubmit(values: TaxFormValues) {
-  onCalculationStart();
-  setIsSubmitting(true);
-  try {
-    const monthlySalary = values.salary;
-    const monthlyBonus = values.bonus || 0;
-    const includeBonusInTaxable = values.includeBonusInTaxableIncome === "yes";
+    onCalculationStart();
+    setIsSubmitting(true);
+    try {
+      const monthlySalary = values.salary;
+      const monthlyBonus = values.bonus || 0;
+      const includeBonusInTaxable = values.includeBonusInTaxableIncome === "yes";
 
-    // Calculate medical allowance and PF, rounded to nearest integer
-    const medicalAllowance = Math.round(monthlySalary * 0.091);
-    const providentFund = Math.round(monthlySalary * 0.05);
+      const medicalAllowance = Math.round(monthlySalary * 0.091);
+      const providentFund = Math.round(monthlySalary * 0.05);
+      const taxableSalary = monthlySalary - medicalAllowance;
 
-    // Taxable salary = salary minus medical allowance
-    const taxableSalary = monthlySalary - medicalAllowance;
+      const annualTaxableIncome = includeBonusInTaxable
+        ? Math.round((taxableSalary + monthlyBonus) * 12)
+        : Math.round(taxableSalary * 12);
 
-    let annualTaxableIncome: number;
-    if (includeBonusInTaxable) {
-      annualTaxableIncome = Math.round((taxableSalary + monthlyBonus) * 12);
-    } else {
-      annualTaxableIncome = Math.round(taxableSalary * 12);
+      const taxDetails = calculateLocalTax(annualTaxableIncome);
+      const taxPayableAnnually = Math.round(taxDetails.taxPayableAnnually);
+      const taxPayableMonthly = Math.round(taxPayableAnnually / 12);
+
+      const takeHomeAnnual = includeBonusInTaxable
+        ? Math.round((monthlySalary + monthlyBonus) * 12 - taxPayableAnnually - providentFund * 12)
+        : Math.round(monthlySalary * 12 - taxPayableAnnually - providentFund * 12 + monthlyBonus * 12);
+
+      const takeHomeMonthly = Math.round(takeHomeAnnual / 12);
+
+      onCalculationResult(
+        {
+          totalAnnualIncome: Math.round((monthlySalary + monthlyBonus) * 12),
+          taxPayableAnnually,
+          taxPayableMonthly,
+          taxSlabSummary: taxDetails.taxSlabSummary,
+          taxSlabList: taxDetails.taxSlabList,
+          takeHomeSalaryAnnually: takeHomeAnnual,
+          takeHomeSalaryMonthly: takeHomeMonthly,
+        },
+        values
+      );
+    } catch (error) {
+      console.error("Tax calculation error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to calculate tax. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+      onCalculationEnd();
     }
-
-    // Calculate tax on taxable income
-    const taxDetails = calculateLocalTax(annualTaxableIncome);
-
-    // Round tax payable annually to integer
-    const taxPayableAnnually = Math.round(taxDetails.taxPayableAnnually);
-    const taxPayableMonthly = Math.round(taxPayableAnnually / 12);
-
-    let takeHomeAnnual: number;
-    if (includeBonusInTaxable) {
-      takeHomeAnnual = Math.round((monthlySalary + monthlyBonus) * 12 - taxPayableAnnually - providentFund * 12);
-    } else {
-      takeHomeAnnual = Math.round(monthlySalary * 12 - taxPayableAnnually - providentFund * 12 + monthlyBonus * 12);
-    }
-
-    const takeHomeMonthly = Math.round(takeHomeAnnual / 12);
-
-    onCalculationResult({
-      totalAnnualIncome: Math.round((monthlySalary + monthlyBonus) * 12),
-      taxPayableAnnually,
-      taxPayableMonthly,
-      taxSlabSummary: taxDetails.taxSlabSummary,
-      taxSlabList: taxDetails.taxSlabList,
-      takeHomeSalaryAnnually: takeHomeAnnual,
-      takeHomeSalaryMonthly: takeHomeMonthly,
-    });
-  } catch (error) {
-    console.error("Tax calculation error:", error);
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: "Failed to calculate tax. Please try again.",
-    });
-  } finally {
-    setIsSubmitting(false);
-    onCalculationEnd();
   }
-}
 
   return (
     <Card className="w-full max-w-lg shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline text-primary">Enter Monthly Salary Details</CardTitle>
+        <CardTitle className="text-2xl font-headline text-primary">
+          Enter Monthly Salary Details
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
             {/* Salary Field */}
             <FormField
               control={form.control}
@@ -200,44 +210,27 @@ export function TaxForm({ onCalculationResult, onCalculationStart, onCalculation
                       type="number"
                       placeholder="e.g., 100000"
                       {...field}
-                      onChange={e => {
-                        field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value));
+                      onChange={(e) => {
+                        field.onChange(e.target.value === "" ? "" : parseFloat(e.target.value));
                         setSalaryValue(e.target.value);
                       }}
-                      aria-describedby="salary-error"
                     />
                   </FormControl>
-                  <FormMessage id="salary-error" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Readonly calculated fields (shown only if user typed salary) */}
+            {/* Readonly calculated fields */}
             {showPercentages && (
               <div className="flex space-x-4">
                 <FormItem className="flex-1">
                   <FormLabel>9.1% (Medical Allowance)</FormLabel>
-                  <Input
-                    type="text"
-                    value={ninePointOnePercent.toLocaleString("en-PK", {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    })}
-                    readOnly
-                    aria-readonly
-                  />
+                  <Input value={ninePointOnePercent.toLocaleString("en-PK")} readOnly />
                 </FormItem>
                 <FormItem className="flex-1">
                   <FormLabel>5% (Provident Fund)</FormLabel>
-                  <Input
-                    type="text"
-                    value={fivePercent.toLocaleString("en-PK", {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    })}
-                    readOnly
-                    aria-readonly
-                  />
+                  <Input value={fivePercent.toLocaleString("en-PK")} readOnly />
                 </FormItem>
               </div>
             )}
@@ -254,42 +247,37 @@ export function TaxForm({ onCalculationResult, onCalculationStart, onCalculation
                       type="number"
                       placeholder="e.g., 10000"
                       {...field}
-                      onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                      aria-describedby="bonus-error"
+                      onChange={(e) =>
+                        field.onChange(e.target.value === "" ? "" : parseFloat(e.target.value))
+                      }
                     />
                   </FormControl>
-                  <FormMessage id="bonus-error" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Include Bonus Radio */}
+            {/* Bonus Inclusion */}
             <FormField
               control={form.control}
               name="includeBonusInTaxableIncome"
               render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Include monthly bonus in taxable income calculation?</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4 pt-1"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="yes" id="bonus-yes" />
-                        </FormControl>
-                        <FormLabel htmlFor="bonus-yes" className="font-normal">Yes</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="no" id="bonus-no" />
-                        </FormControl>
-                        <FormLabel htmlFor="bonus-no" className="font-normal">No (add to take-home after tax)</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
+                <FormItem>
+                  <FormLabel>Include bonus in taxable income?</FormLabel>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex flex-col sm:flex-row sm:space-x-4"
+                  >
+                    <label htmlFor="bonus-yes" className="flex items-center space-x-2 cursor-pointer">
+                      <RadioGroupItem value="yes" id="bonus-yes" />
+                      <span className="text-sm">Yes</span>
+                    </label>
+                    <label htmlFor="bonus-no" className="flex items-center space-x-2 cursor-pointer">
+                      <RadioGroupItem value="no" id="bonus-no" />
+                      <span className="text-sm">No (add to take-home only)</span>
+                    </label>
+                  </RadioGroup>
                   <FormMessage />
                 </FormItem>
               )}
@@ -297,7 +285,7 @@ export function TaxForm({ onCalculationResult, onCalculationStart, onCalculation
 
             <Button
               type="submit"
-              className="w-full !mb-4 bg-accent hover:bg-accent/90 text-accent-foreground"
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -315,3 +303,4 @@ export function TaxForm({ onCalculationResult, onCalculationStart, onCalculation
     </Card>
   );
 }
+

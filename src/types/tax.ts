@@ -5,6 +5,6 @@ export interface TaxCalculationOutput {
   taxPayableMonthly: number;
   takeHomeSalaryAnnually: number;
   takeHomeSalaryMonthly: number;
-  taxSlabSummary: string;       // NEW - applicable slab
-  taxSlabList: string;          // NEW - full list
+  taxSlabSummary: string;
+  taxSlabList: string;
 }
