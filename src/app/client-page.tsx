@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { TaxForm } from "@/components/tax-form";
 import { TaxResults } from "@/components/tax-results";
@@ -19,7 +19,7 @@ export default function ClientPage() {
     includeBonusInTaxableIncome: "yes" | "no";
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const resultsRef = useRef<HTMLDivElement | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const salaryParam = searchParams.get("salary");
   const bonusParam = searchParams.get("bonus");
@@ -68,10 +68,16 @@ export default function ClientPage() {
 
   const handleCalculationEnd = () => {
     setIsLoading(false);
-    setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
   };
+
+    // Scroll to results when taxResult and submittedValues are ready, and not loading
+  useEffect(() => {
+    if (taxResult && submittedValues && !isLoading && resultsRef.current) {
+      setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100); // small delay
+    }
+  }, [taxResult, submittedValues, isLoading]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start pt-4 sm:pt-6 md:pt-20 px-6 sm:px-12 md:px-24 bg-background font-body">
@@ -93,8 +99,11 @@ export default function ClientPage() {
       />
 
       {taxResult && submittedValues && !isLoading && (
-        <section className="mt-8 w-full max-w-2xl animate-in fade-in duration-500">
-          <div ref={resultsRef} className="mt-6">
+        <section
+          ref={resultsRef}
+          className="mt-8 w-full max-w-2xl animate-in fade-in duration-500"
+        >
+          <div className="mt-6">
             <TaxResults results={taxResult} submittedValues={submittedValues} />
           </div>
         </section>
