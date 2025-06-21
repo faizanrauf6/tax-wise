@@ -119,7 +119,9 @@ export function TaxForm({
   defaultValues = {},
 }: TaxFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [salaryValue, setSalaryValue] = useState(defaultValues.salary?.toString() ?? "");
+  const [salaryValue, setSalaryValue] = useState(
+    defaultValues.salary !== undefined ? String(defaultValues.salary) : ""
+  );
   const { toast } = useToast();
 
   const form = useForm<TaxFormValues>({
@@ -132,7 +134,8 @@ export function TaxForm({
   });
 
   const salaryNumber = Number(salaryValue);
-  const showPercentages = salaryValue.length > 0 && !isNaN(salaryNumber) && salaryNumber > 0;
+  const showPercentages =
+    salaryValue.length > 0 && !isNaN(salaryNumber) && salaryNumber > 0;
 
   const ninePointOnePercent = showPercentages ? Math.round(salaryNumber * 0.091) : 0;
   const fivePercent = showPercentages ? Math.round(salaryNumber * 0.05) : 0;
@@ -158,29 +161,36 @@ export function TaxForm({
       const taxPayableMonthly = Math.round(taxPayableAnnually / 12);
 
       const takeHomeAnnual = includeBonusInTaxable
-        ? Math.round((monthlySalary + monthlyBonus) * 12 - taxPayableAnnually - providentFund * 12)
-        : Math.round(monthlySalary * 12 - taxPayableAnnually - providentFund * 12 + monthlyBonus * 12);
+        ? Math.round(
+            (monthlySalary + monthlyBonus) * 12 -
+              taxPayableAnnually -
+              providentFund * 12
+          )
+        : Math.round(
+            monthlySalary * 12 -
+              taxPayableAnnually -
+              providentFund * 12 +
+              monthlyBonus * 12
+          );
 
       const takeHomeMonthly = Math.round(takeHomeAnnual / 12);
 
-      onCalculationResult(
-        {
-          totalAnnualIncome: Math.round((monthlySalary + monthlyBonus) * 12),
-          taxPayableAnnually,
-          taxPayableMonthly,
-          taxSlabSummary: taxDetails.taxSlabSummary,
-          taxSlabList: taxDetails.taxSlabList,
-          takeHomeSalaryAnnually: takeHomeAnnual,
-          takeHomeSalaryMonthly: takeHomeMonthly,
-        },
-        values
-      );
+      const result: TaxCalculationOutput = {
+        totalAnnualIncome: (monthlySalary + monthlyBonus) * 12,
+        taxPayableAnnually,
+        taxPayableMonthly,
+        takeHomeSalaryAnnually: takeHomeAnnual,
+        takeHomeSalaryMonthly: takeHomeMonthly,
+        taxSlabSummary: taxDetails.taxSlabSummary,
+        taxSlabList: taxDetails.taxSlabList,
+      };
+
+      onCalculationResult(result, values);
     } catch (error) {
-      console.error("Tax calculation error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to calculate tax. Please try again.",
+        title: "Error calculating tax",
+        description: (error as Error)?.message || "Unknown error",
       });
     } finally {
       setIsSubmitting(false);
@@ -189,16 +199,17 @@ export function TaxForm({
   }
 
   return (
-    <Card className="w-full max-w-lg shadow-xl">
+    <Card className="w-full max-w-2xl shadow-lg">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline text-primary">
-          Enter Monthly Salary Details
-        </CardTitle>
+        <CardTitle className="text-2xl font-headline text-primary">Calculate Your Tax</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Salary Field */}
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-6"
+            noValidate
+          >
             <FormField
               control={form.control}
               name="salary"
@@ -208,48 +219,42 @@ export function TaxForm({
                   <FormControl>
                     <Input
                       type="number"
-                      placeholder="e.g., 100000"
+                      min={0}
+                      placeholder="Enter your monthly salary"
                       {...field}
+                      value={salaryValue}
                       onChange={(e) => {
-                        field.onChange(e.target.value === "" ? "" : parseFloat(e.target.value));
                         setSalaryValue(e.target.value);
+                        field.onChange(Number(e.target.value));
                       }}
+                      disabled={isSubmitting}
+                      autoFocus
                     />
                   </FormControl>
                   <FormMessage />
+                  {showPercentages && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Exempt Medical Allowance (9.1%): PKR {ninePointOnePercent.toLocaleString()}
+                      , Provident Fund (5%): PKR {fivePercent.toLocaleString()}
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
 
-            {/* Readonly calculated fields */}
-            {showPercentages && (
-              <div className="flex space-x-4">
-                <FormItem className="flex-1">
-                  <FormLabel>9.1% (Medical Allowance)</FormLabel>
-                  <Input value={ninePointOnePercent.toLocaleString("en-PK")} readOnly />
-                </FormItem>
-                <FormItem className="flex-1">
-                  <FormLabel>5% (Provident Fund)</FormLabel>
-                  <Input value={fivePercent.toLocaleString("en-PK")} readOnly />
-                </FormItem>
-              </div>
-            )}
-
-            {/* Bonus Field */}
             <FormField
               control={form.control}
               name="bonus"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Monthly Bonus (PKR, Optional)</FormLabel>
+                  <FormLabel>Monthly Bonus (PKR)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      placeholder="e.g., 10000"
+                      min={0}
+                      placeholder="Enter your monthly bonus (optional)"
                       {...field}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === "" ? "" : parseFloat(e.target.value))
-                      }
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -257,45 +262,40 @@ export function TaxForm({
               )}
             />
 
-            {/* Bonus Inclusion */}
             <FormField
               control={form.control}
               name="includeBonusInTaxableIncome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Include bonus in taxable income?</FormLabel>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    className="flex flex-col sm:flex-row sm:space-x-4"
-                  >
-                    <label htmlFor="bonus-yes" className="flex items-center space-x-2 cursor-pointer">
-                      <RadioGroupItem value="yes" id="bonus-yes" />
-                      <span className="text-sm">Yes</span>
-                    </label>
-                    <label htmlFor="bonus-no" className="flex items-center space-x-2 cursor-pointer">
-                      <RadioGroupItem value="no" id="bonus-no" />
-                      <span className="text-sm">No (add to take-home only)</span>
-                    </label>
-                  </RadioGroup>
+                  <FormLabel>Include Bonus in Taxable Income?</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex flex-row space-x-4"
+                    >
+                      <FormItem>
+                        <FormLabel className="cursor-pointer flex items-center space-x-2">
+                          <RadioGroupItem value="yes" id="include-bonus-yes" />
+                          <span>Yes</span>
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem>
+                        <FormLabel className="cursor-pointer flex items-center space-x-2">
+                          <RadioGroupItem value="no" id="include-bonus-no" />
+                          <span>No</span>
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button
-              type="submit"
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Calculating...
-                </>
-              ) : (
-                "Calculate Tax"
-              )}
+            <Button disabled={isSubmitting} type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Calculate Tax
             </Button>
           </form>
         </Form>
@@ -303,4 +303,3 @@ export function TaxForm({
     </Card>
   );
 }
-

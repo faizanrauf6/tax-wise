@@ -40,7 +40,6 @@ export function TaxResults({ results, submittedValues }: TaxResultsProps) {
             <span>Tax Calculation Summary</span>
           </div>
 
-          {/* ShareLinkButton placed on right side */}
           <ShareLinkButton
             salary={submittedValues.salary}
             bonus={submittedValues.bonus}
