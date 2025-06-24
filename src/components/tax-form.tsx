@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,6 +36,8 @@ interface TaxFormProps {
   onCalculationStart: () => void;
   onCalculationEnd: () => void;
   defaultValues?: Partial<TaxFormValues>;
+  autoSubmit?: boolean;
+  onAutoSubmit?: () => void;
 }
 
 const taxSlabs = [
@@ -117,6 +119,8 @@ export function TaxForm({
   onCalculationStart,
   onCalculationEnd,
   defaultValues = {},
+  autoSubmit = false,
+  onAutoSubmit,
 }: TaxFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [salaryValue, setSalaryValue] = useState(
@@ -198,6 +202,14 @@ export function TaxForm({
     }
   }
 
+  // Inside TaxForm component, after form setup
+  useEffect(() => {
+    if (autoSubmit && defaultValues?.salary) {
+      form.handleSubmit(onSubmit)();
+      onAutoSubmit?.();
+    }
+  }, [autoSubmit]);
+
   return (
     <Card className="w-full max-w-2xl shadow-lg">
       <CardHeader>
@@ -267,7 +279,7 @@ export function TaxForm({
               name="includeBonusInTaxableIncome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Include Bonus in Taxable Income?</FormLabel>
+                  <FormLabel>Include Bonuses in Taxable Income?</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}

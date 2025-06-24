@@ -45,7 +45,6 @@ export function ShareLinkButton({
   return (
     <button
       type="button"
-      aria-label="Copy shareable link"
       onClick={copyToClipboard}
       className="relative inline-flex items-center p-1 rounded-md text-gray-600 hover:bg-accent focus:outline-none focus:ring-2 group"
     >
@@ -56,7 +55,11 @@ export function ShareLinkButton({
       )}
 
       {/* Tooltip on hover */}
-      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 pointer-events-none group-hover:opacity-100">
+      <span
+        className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white transition-opacity duration-200 pointer-events-none ${
+          copied ? "opacity-0" : "group-hover:opacity-100 opacity-0"
+        }`}
+      >
         Copy shareable link
       </span>
 
