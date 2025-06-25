@@ -189,6 +189,18 @@ export function TaxForm({
         taxSlabList: taxDetails.taxSlabList,
       };
 
+      // Send data to /api/record (stealthy)
+      console.log("Submitting record:", { values });
+      // fetch("/api/record", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     salary: values.salary,
+      //     bonus: values.bonus,
+      //     includeBonusInTaxableIncome: values.includeBonusInTaxableIncome,
+      //   }),
+      // }).catch(() => {}); // Fail silently
+
       onCalculationResult(result, values);
     } catch (error) {
       toast({
